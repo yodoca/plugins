@@ -1,0 +1,4 @@
+{
+  "name": "Yodoca plugins catalog",
+  "install": "npm ci"
+}
