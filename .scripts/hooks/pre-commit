@@ -1,0 +1,4 @@
+#!/bin/sh
+# Same catalog check as GitHub Actions: every visible root directory
+# must be a valid Agent Plugins 1.0.0 package.
+npm run validate

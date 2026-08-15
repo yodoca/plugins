@@ -31,10 +31,18 @@ Canonical catalog package: [`context7/`](./context7).
 │   ├── mcp.json              # only if the plugin ships MCP
 │   ├── skills/<skill>/SKILL.md
 │   └── README.md
-└── .agents/
-    ├── agents.md             # pointer to this file
-    └── skills/create-yodoca-plugin/
+├── .agents/
+│   ├── agents.md             # pointer to this file
+│   └── skills/create-yodoca-plugin/
+├── .github/workflows/        # catalog CI (hidden; not a plugin)
+└── .scripts/                 # catalog validator (hidden; not a plugin)
+    ├── validate-plugins.mjs
+    ├── install-hooks.mjs
+    ├── hooks/pre-commit
+    └── schemas/
 ```
+
+Visible (non-dot) directories at the repo root are plugin packages only. Catalog tooling lives in hidden directories (`.agents/`, `.scripts/`, `.github/`).
 
 The plugin directory name **must** equal `plugin.json` `name`.
 
@@ -58,9 +66,16 @@ Do not invent a product identity. If the name or component set is missing, ask.
 
 ## Test commands
 
-This repo has no build or runtime dependencies. Before finishing a task, run the validator and fix every error.
+Catalog-wide check (GitHub Actions and Git pre-commit run this):
 
-The Python and Node implementations are equivalent. Run **exactly one** — whichever interpreter is already available. Do not run both. Do not install a runtime just to use the other copy.
+```bash
+npm ci
+npm run validate
+```
+
+`npm ci` also sets `core.hooksPath` to `.scripts/hooks/`, so subsequent commits run the same validator. Do not commit a package it rejects.
+
+For a single package while authoring, the Python and Node scripts in the create-yodoca-plugin skill are equivalent. Run **exactly one** — whichever interpreter is already available. Do not run both. Do not install a runtime just to use the other copy.
 
 One plugin (substitute the directory name):
 
@@ -78,9 +93,7 @@ Canonical catalog example:
 python .agents/skills/create-yodoca-plugin/scripts/validate-plugin.py ./context7
 ```
 
-On Windows PowerShell, call `python` (not `python3` if the latter is missing) or `node`. If you changed the authoring skill or validator, run **one** script for every root directory that contains `plugin.json`.
-
-Do not commit a package the validator rejects.
+On Windows PowerShell, call `python` (not `python3` if the latter is missing) or `node`. If you changed the authoring skill, run **one** per-plugin script. If you changed the catalog validator or added a plugin, run `npm run validate`.
 
 ## Code style
 
@@ -107,7 +120,7 @@ Do not commit a package the validator rejects.
 - Commit only when the user explicitly asks.
 - Commit messages: concise, Russian or English to match branch history; focus on why, not a file list.
 - PR title: `[<plugin-name>] <short description>` for a single-plugin change; no prefix for catalog, authoring-skill, or infra edits.
-- Run the validator on affected packages before committing.
+- Run `npm run validate` before committing (pre-commit does this after `npm ci`).
 - Do not commit `.env`, keys, or other secrets.
 
 ## Nested instructions

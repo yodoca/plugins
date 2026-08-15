@@ -59,13 +59,14 @@ function fail(pkg, message) {
   errors.push(`  [FAIL] ${pkg}: ${message}`);
 }
 
-// A plugin package is any immediate subdirectory of the repo root that
-// contains a plugin.json manifest.
+// A plugin package is any immediate non-dot subdirectory of the repo root.
+// node_modules is ignored because npm ci creates it before validation runs.
+const SKIP_ROOT_DIRS = new Set(["node_modules"]);
+
 function discoverPlugins() {
   return readdirSync(repoRoot, { withFileTypes: true })
-    .filter((e) => e.isDirectory() && !e.name.startsWith("."))
+    .filter((e) => e.isDirectory() && !e.name.startsWith(".") && !SKIP_ROOT_DIRS.has(e.name))
     .map((e) => e.name)
-    .filter((name) => isFile(join(repoRoot, name, "plugin.json")))
     .sort();
 }
 
@@ -83,6 +84,10 @@ function validatePlugin(name) {
 
   // ---- plugin.json ----
   const manifestPath = join(pkgRoot, "plugin.json");
+  if (!isFile(manifestPath)) {
+    fail(name, "missing plugin.json; every non-dot root directory must be a plugin package");
+    return;
+  }
   let manifest;
   try {
     manifest = readJson(manifestPath);
@@ -287,7 +292,7 @@ function validateHeaders(pkg, serverName, headers) {
 console.log(`Validating Agent Plugins catalog at ${repoRoot}`);
 const plugins = discoverPlugins();
 if (plugins.length === 0) {
-  console.error("No plugin packages found (no directory with a plugin.json).");
+  console.error("No plugin packages found (no non-dot root directory).");
   process.exit(1);
 }
 for (const name of plugins) {

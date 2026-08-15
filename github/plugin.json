@@ -1,0 +1,14 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "github",
+  "version": "1.0.0",
+  "description": "Connects agents to GitHub repositories, issues, pull requests, code search, and Actions through GitHub's official remote MCP server.",
+  "author": {
+    "name": "Yodoca",
+    "url": "https://yodoca.ru"
+  },
+  "homepage": "https://github.com/github/github-mcp-server",
+  "repository": "https://github.com/yodoca/plugins",
+  "license": "Apache-2.0",
+  "keywords": ["github", "git", "repositories", "pull-requests", "issues", "actions", "mcp"]
+}

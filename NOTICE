@@ -9,3 +9,9 @@ See the LICENSE file in the project root for the full license text.
 The context7 plugin packages the Context7 documentation service
 (https://context7.com) operated by Upstash. Context7 client plugins
 are published at https://github.com/upstash/context7 under the MIT License.
+
+The github plugin packages GitHub's official remote MCP server
+(https://github.com/github/github-mcp-server) operated by GitHub,
+licensed under the MIT License. Agent workflow skills and helper
+scripts are adapted from the OpenAI Codex GitHub plugin
+(Apache-2.0) and the Cursor GitHub marketplace plugin (MIT).

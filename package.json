@@ -6,8 +6,9 @@
   "type": "module",
   "license": "Apache-2.0",
   "scripts": {
-    "validate": "node scripts/validate-plugins.mjs",
-    "test": "node scripts/validate-plugins.mjs"
+    "validate": "node .scripts/validate-plugins.mjs",
+    "test": "node .scripts/validate-plugins.mjs",
+    "prepare": "node .scripts/install-hooks.mjs"
   },
   "engines": {
     "node": ">=18"
