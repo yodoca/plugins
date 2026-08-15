@@ -2,6 +2,8 @@
 
 Normative text: [specification](https://agent-plugins.org/specification). Schemas: [plugin.schema.json](https://agent-plugins.org/schemas/1.0.0/plugin.schema.json), [mcp.schema.json](https://agent-plugins.org/schemas/1.0.0/mcp.schema.json). Skill format: [Agent Skills](https://agentskills.io/specification).
 
+This catalog uses Agent Plugins 1.0.0 **packaging** and a **Yodoca runtime subset**. Packages are imported into Yodoca Agent / Gateway. Do not ship components that Yodoca will not execute.
+
 ## Manifest (`plugin.json`)
 
 Closed object. Required: `$schema`, `name`.
@@ -34,23 +36,26 @@ Invalid skill → skip that skill. Invalid top-level `mcp.json` → disable MCP 
 
 ## Skills
 
+Agent Plugins 1.0 / Agent Skills allow optional `scripts/`, `references/`, and `assets/`. **This catalog does not.**
+
+Yodoca reads only `SKILL.md` (frontmatter + body) and stores it as an instruction pack. It does not execute skill scripts or inject `references/` / `assets/`.
+
+Catalog rules:
+
 - Directory name = frontmatter `name`.
 - `name`: 1–64, `a-z0-9-`, no leading/trailing `-`, no `--`.
 - `description`: 1–1024, non-empty, what + when.
 - Optional frontmatter: `license`, `compatibility` (≤500), `metadata` (string→string), `allowed-tools`.
-- Optional dirs: `scripts/`, `references/`, `assets/` (conventions, not an allowlist).
+- **Forbidden:** `skills/<name>/scripts/`.
+- Required instructions live in `SKILL.md`. Do not rely on `references/` or `assets/` for runtime behavior.
+- Skill bodies tell the agent to use this plugin's MCP tools. Do not require local `git`, `gh`, or `python`.
 - Clients do not recurse for nested `SKILL.md`.
 
 ## MCP (`mcp.json`)
 
 Closed object. Required: `$schema` = `https://agent-plugins.org/schemas/1.0.0/mcp.schema.json`, `mcpServers` (object, may be empty).
 
-### stdio
-
-- `command`: one token; bare executable or `./...` inside the plugin. No placeholder expansion.
-- `args` / `env` values / `cwd`: may contain `${PLUGIN_ROOT}` and `${PLUGIN_DATA}` (single-pass, non-recursive).
-- `cwd` if set: `./...`, `${PLUGIN_ROOT}...`, or `${PLUGIN_DATA}...`. Default cwd is plugin root.
-- `env` MUST NOT define `PLUGIN_ROOT` or `PLUGIN_DATA`.
+Agent Plugins 1.0.0 allows `stdio`. **This catalog forbids it.** Yodoca Gateway does not execute stdio MCP (declaration-only). Catalog plugins ship hosted MCP only.
 
 ### streamable-http and sse
 
@@ -59,10 +64,14 @@ Closed object. Required: `$schema` = `https://agent-plugins.org/schemas/1.0.0/mc
 - Agent Plugins 1.0.0 has no portable OAuth/secret fields. Auth is client-managed.
 - `sse` is deprecated; do not choose it for new Yodoca plugins unless a server only speaks HTTP+SSE.
 
+### stdio (not used here)
+
+The spec still defines `command` / `args` / `env` / `cwd` and `${PLUGIN_ROOT}` / `${PLUGIN_DATA}`. Do not add `type: stdio` servers to this catalog. The validator fails them.
+
 ## Package containment
 
 Any plugin-relative path field MUST start with `./` and resolve inside the plugin root. No `..`. No escaping via symlinks.
 
 ## Client extensions (non-portable)
 
-Manifest: `extensions.<namespace>` objects. Files: top-level directory named exactly the namespace (`com.yodoca.platform/`). Other clients ignore them. Do not use extensions to smuggle skills or MCP.
+Manifest: `extensions.<namespace>` objects. Files: top-level directory named exactly the namespace (`com.yodoca.platform/`). Other clients ignore them. Do not use extensions to smuggle skills or MCP. Do not add Cursor `hooks.json` as a portable component.

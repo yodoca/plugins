@@ -11,7 +11,7 @@
 
 import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { dirname, join, resolve, relative, sep } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import Ajv2020 from "ajv/dist/2020.js";
 import yaml from "js-yaml";
 
@@ -70,13 +70,6 @@ function discoverPlugins() {
     .sort();
 }
 
-// Enforce spec §4.1: a package path must resolve within the plugin root.
-function withinRoot(root, relPath) {
-  const resolved = resolve(root, relPath);
-  const rel = relative(root, resolved);
-  return rel === "" || (!rel.startsWith("..") && !rel.startsWith(`..${sep}`) && !resolve(rel).startsWith(".."));
-}
-
 function validatePlugin(name) {
   pluginCount += 1;
   const pkgRoot = join(repoRoot, name);
@@ -130,7 +123,7 @@ function validatePlugin(name) {
         if (mcp.$schema !== MCP_SCHEMA_ID) {
           fail(name, `mcp.json $schema must be ${MCP_SCHEMA_ID}`);
         }
-        validateMcpSemantics(name, pkgRoot, mcp);
+        validateMcpSemantics(name, mcp);
       }
     }
   }
@@ -163,10 +156,17 @@ function hasErrorFor(name) {
 
 function validateSkill(pkg, skillsDir, skill, checks) {
   const skillPath = join(skillsDir, skill);
-  const skillMd = join(skillPath, "SKILL.md");
+    const skillMd = join(skillPath, "SKILL.md");
   if (!isFile(skillMd)) {
     fail(pkg, `skills/${skill} has no SKILL.md regular file`);
     return;
+  }
+  const scriptsDir = join(skillPath, "scripts");
+  if (existsSync(scriptsDir)) {
+    fail(
+      pkg,
+      `skills/${skill}/scripts is not allowed: Yodoca does not execute skill scripts`,
+    );
   }
   const raw = readFileSync(skillMd, "utf8");
   const fm = parseFrontmatter(raw);
@@ -226,26 +226,15 @@ function parseFrontmatter(raw) {
   return m ? m[1] : null;
 }
 
-function validateMcpSemantics(pkg, pkgRoot, mcp) {
+function validateMcpSemantics(pkg, mcp) {
   for (const [serverName, server] of Object.entries(mcp.mcpServers ?? {})) {
     if (!server || typeof server !== "object") continue;
     if (server.type === "stdio") {
-      const cmd = server.command;
-      if (typeof cmd === "string" && cmd.startsWith("./") && !withinRoot(pkgRoot, cmd)) {
-        fail(pkg, `mcp.json server "${serverName}" command escapes the plugin root`);
-      }
-      if (typeof cmd === "string" && (cmd.includes("/") || cmd.includes("\\")) && !cmd.startsWith("./")) {
-        fail(pkg, `mcp.json server "${serverName}" command must be a bare name or a ./-relative path`);
-      }
-      if (server.cwd !== undefined) {
-        const cwd = server.cwd;
-        const rooted = cwd.startsWith("${PLUGIN_ROOT}") || cwd.startsWith("${PLUGIN_DATA}");
-        if (cwd.startsWith("./") && !withinRoot(pkgRoot, cwd)) {
-          fail(pkg, `mcp.json server "${serverName}" cwd escapes the plugin root`);
-        } else if (!cwd.startsWith("./") && !rooted) {
-          fail(pkg, `mcp.json server "${serverName}" cwd must start with ./, \${PLUGIN_ROOT}, or \${PLUGIN_DATA}`);
-        }
-      }
+      fail(
+        pkg,
+        `mcp.json server "${serverName}" uses stdio; this catalog ships hosted MCP only (Yodoca Gateway does not execute stdio)`,
+      );
+      continue;
     } else if (server.type === "streamable-http" || server.type === "sse") {
       validateRemoteUrl(pkg, serverName, server.url);
       validateHeaders(pkg, serverName, server.headers);
@@ -305,4 +294,4 @@ if (hadError) {
   for (const line of errors) console.error(line);
   process.exit(1);
 }
-console.log(`Validation PASSED. ${pluginCount} package(s) checked, all conform to Agent Plugins 1.0.0.`);
+console.log(`Validation PASSED. ${pluginCount} package(s) checked, all conform to Agent Plugins 1.0.0 and the Yodoca catalog subset.`);

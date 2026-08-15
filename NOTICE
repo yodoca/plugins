@@ -12,6 +12,6 @@ are published at https://github.com/upstash/context7 under the MIT License.
 
 The github plugin packages GitHub's official remote MCP server
 (https://github.com/github/github-mcp-server) operated by GitHub,
-licensed under the MIT License. Agent workflow skills and helper
-scripts are adapted from the OpenAI Codex GitHub plugin
-(Apache-2.0) and the Cursor GitHub marketplace plugin (MIT).
+licensed under the MIT License. Agent workflow skills are adapted from
+the OpenAI Codex GitHub plugin (Apache-2.0) and the Cursor GitHub
+marketplace plugin (MIT).

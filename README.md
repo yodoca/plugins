@@ -1,8 +1,8 @@
 # Плагины Yodoca Platform
 
-Публичный каталог [плагинов](https://github.com/yodoca/plugins) для [Yodoca Platform](https://yodoca.ru). Каждый плагин — отдельный переносимый пакет в формате [Agent Plugins v1.0](https://agent-plugins.org/).
+Публичный каталог [плагинов](https://github.com/yodoca/plugins) для [Yodoca Platform](https://yodoca.ru). Каждый плагин — отдельный переносимый пакет в формате [Agent Plugins v1.0](https://agent-plugins.org/) в **подмножестве Yodoca**: инструкции из `SKILL.md` и hosted MCP (`streamable-http`). Репозиторий импортируется в Agent как Git-каталог.
 
-Совместимые клиенты обнаруживают пакет по корневому `plugin.json` и загружают поддерживаемые компоненты: [Agent Skills](https://agentskills.io/specification) и [MCP-серверы](https://modelcontextprotocol.io/specification).
+Yodoca не исполняет skill-скрипты и не запускает stdio MCP. Совместимые клиенты обнаруживают пакет по корневому `plugin.json` и загружают [Agent Skills](https://agentskills.io/specification) и [MCP-серверы](https://modelcontextprotocol.io/specification) в этих пределах.
 
 ## Формат пакета
 
@@ -31,8 +31,8 @@ my-plugin/
 
 - `$schema` должен указывать на `https://agent-plugins.org/schemas/1.0.0/plugin.schema.json`.
 - `name` — 1–64 символа: строчные латинские буквы, цифры, дефисы и точки; без `--` и `..`.
-- Skills лежат в непосредственных подкаталогах `skills/`, у каждого есть `SKILL.md`.
-- MCP-серверы описываются только в корневом `mcp.json`, не в `plugin.json`.
+- Skills лежат в непосредственных подкаталогах `skills/`, у каждого есть `SKILL.md`. Каталог `scripts/` у skill запрещён.
+- MCP-серверы описываются только в корневом `mcp.json`, не в `plugin.json`. В этом каталоге — hosted MCP (`streamable-http` / при необходимости `sse`), не `stdio`.
 - Пути внутри пакета не выходят за его корень; относительные пути в конфигурации начинаются с `./`.
 
 Полный контракт: [спецификация Agent Plugins 1.0.0](https://agent-plugins.org/specification). Как собрать пакет: [Build an Agent Plugin](https://agent-plugins.org/plugin-authors).
@@ -54,7 +54,7 @@ my-plugin/
 
 ## Проверка (валидация)
 
-Каталог содержит валидатор, который проверяет каждый пакет по схемам и семантике Agent Plugins 1.0.0 (манифест, `mcp.json`, фронтматтер skills, правила путей и URL).
+Каталог содержит валидатор, который проверяет каждый пакет по схемам и семантике Agent Plugins 1.0.0, плюс правила каталога Yodoca: нет `skills/*/scripts/` и нет stdio MCP.
 
 ```bash
 npm ci        # установка зависимостей валидатора

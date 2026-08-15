@@ -1,10 +1,9 @@
 #!/usr/bin/env node
 // Validate a Yodoca plugin package against Agent Plugins 1.0.0 constraints.
 // Equivalent to validate-plugin.py. Agents should run exactly one of the two.
-"use strict";
 
-const fs = require("fs");
-const path = require("path");
+import fs from "node:fs";
+import path from "node:path";
 
 const PLUGIN_SCHEMA = "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json";
 const MCP_SCHEMA = "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json";
@@ -26,9 +25,6 @@ const AUTHOR_FIELDS = new Set(["name", "email", "url"]);
 const SECRET_HINT =
   /(api[_-]?key|secret|password|passwd|token|bearer\s+[a-z0-9._\-]+|sk-[a-z0-9]+|ghp_[a-z0-9]+)/i;
 const PLACEHOLDER_RE = /\$\{[^}]+\}/;
-const CWD_RE = new RegExp(
-  "^(?:\\./|\\$\\{PLUGIN_ROOT\\}(?:/|$)|\\$\\{PLUGIN_DATA\\}(?:/|$))"
-);
 
 function posix(filePath) {
   return filePath.split(path.sep).join("/");
@@ -223,6 +219,11 @@ function validateSkills(pluginDir, reporter) {
       reporter.error(`skills/${childName}/: missing SKILL.md`);
       continue;
     }
+    if (isDir(path.join(child, "scripts"))) {
+      reporter.error(
+        `skills/${childName}/scripts is not allowed: Yodoca does not execute skill scripts`
+      );
+    }
     const frontmatter = parseFrontmatter(readText(skillMd));
     if (frontmatter === null) {
       reporter.error(`skills/${childName}/SKILL.md: missing YAML frontmatter`);
@@ -243,58 +244,6 @@ function validateSkills(pluginDir, reporter) {
     found.push(name || childName);
   }
   return found;
-}
-
-function validateStdio(serverId, server, reporter) {
-  const command = server.command;
-  if (typeof command !== "string" || !command) {
-    reporter.error(`mcp.json ${serverId}: stdio command must be a non-empty string`);
-  } else if (command.trim().includes(" ")) {
-    reporter.error(`mcp.json ${serverId}: command must be one executable token`);
-  } else if (PLACEHOLDER_RE.test(command)) {
-    reporter.error(`mcp.json ${serverId}: command must not contain placeholders`);
-  } else if (command.replaceAll("\\", "/").includes("/") && !command.startsWith("./")) {
-    reporter.error(`mcp.json ${serverId}: package command must start with ./`);
-  } else if (command.startsWith("../") || command.includes("/../")) {
-    reporter.error(`mcp.json ${serverId}: command escapes the plugin root`);
-  }
-
-  const extra = extraKeys(server, new Set(["type", "command", "args", "env", "cwd"]));
-  if (extra.length) {
-    reporter.error(`mcp.json ${serverId}: unknown stdio fields: ${extra.join(", ")}`);
-  }
-
-  if ("args" in server) {
-    const args = server.args;
-    if (!Array.isArray(args) || args.some((item) => typeof item !== "string")) {
-      reporter.error(`mcp.json ${serverId}: args must be an array of strings`);
-    }
-  }
-
-  if ("env" in server) {
-    const env = server.env;
-    if (env === null || typeof env !== "object" || Array.isArray(env) ||
-        Object.values(env).some((value) => typeof value !== "string")) {
-      reporter.error(`mcp.json ${serverId}: env must be an object of strings`);
-    } else {
-      for (const key of ["PLUGIN_ROOT", "PLUGIN_DATA"]) {
-        if (key in env) {
-          reporter.error(`mcp.json ${serverId}: env must not set ${key}`);
-        }
-      }
-    }
-  }
-
-  if ("cwd" in server) {
-    const cwd = server.cwd;
-    if (typeof cwd !== "string" || !CWD_RE.test(cwd)) {
-      reporter.error(
-        `mcp.json ${serverId}: cwd must start with ./, \${PLUGIN_ROOT}, or \${PLUGIN_DATA}`
-      );
-    } else if (cwd.includes("..")) {
-      reporter.error(`mcp.json ${serverId}: cwd must stay inside the plugin or PLUGIN_DATA`);
-    }
-  }
 }
 
 function validateRemote(serverId, server, reporter) {
@@ -386,14 +335,16 @@ function validateMcp(pluginDir, reporter) {
     }
     const transport = server.type;
     if (transport === "stdio") {
-      validateStdio(serverId, server, reporter);
+      reporter.error(
+        `mcp.json ${serverId}: stdio is not allowed; this catalog ships hosted MCP only`
+      );
     } else if (transport === "streamable-http" || transport === "sse") {
       if (transport === "sse") {
         reporter.warn(`mcp.json ${serverId}: sse is deprecated; prefer streamable-http`);
       }
       validateRemote(serverId, server, reporter);
     } else {
-      reporter.error(`mcp.json ${serverId}: type must be stdio, streamable-http, or sse`);
+      reporter.error(`mcp.json ${serverId}: type must be streamable-http or sse`);
     }
   }
   return found;

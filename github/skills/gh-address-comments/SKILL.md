@@ -1,51 +1,35 @@
 ---
 name: gh-address-comments
-description: Address actionable GitHub pull request review feedback. Use when the user wants to inspect unresolved review threads, requested changes, or inline review comments on a PR, then implement selected fixes. Use GitHub MCP tools for PR metadata and flat comment reads, and use the bundled GraphQL script via `gh` whenever thread-level state, resolution status, or inline review context matters.
+description: Address actionable GitHub pull request review feedback using this plugin's GitHub MCP tools. Use when the user wants to inspect review comments or requested changes on a PR, then implement selected fixes. Ask for owner/repo and PR number when they are missing.
 ---
 
 # GitHub PR Comment Handler
 
 ## When to use
 
-- Unresolved review threads, requested changes, or inline review comments on a PR
+- Unresolved review comments, requested changes, or inline review notes on a PR
 - The user wants to inspect feedback and then implement selected fixes
 
 ## Instructions
 
-Use GitHub MCP tools from this plugin for PR metadata and patch context. Treat thread-aware review data as a `gh api graphql` problem when MCP comment tools return a flat comment list that does not preserve `isResolved`, `isOutdated`, or file and line anchors.
-
-Run `gh` commands with network access. If CLI auth is required, confirm `gh auth status` first and ask the user to authenticate with `gh auth login` if it fails.
+Use GitHub MCP tools from this plugin for PR metadata, patch context, and comments. Do not run local `git`, `gh`, GraphQL via CLI, or skill scripts.
 
 ## Workflow
 
-1. Resolve the PR.
-   - If the user provides a repository and PR number or URL, use that directly.
-   - If the request is about the current branch PR, use local git context plus `gh auth status` and `gh pr view --json number,url` to resolve it.
-2. Inspect review context with thread-aware reads.
-   - Use GitHub MCP tools to fetch PR metadata and patch context when the repo and PR are known.
-   - Use the bundled `scripts/fetch_comments.py` workflow whenever the task depends on unresolved review threads, inline review locations, or resolution state. That script fetches `reviewThreads`, `isResolved`, `isOutdated`, and file and line anchors that a flat MCP comment list may not preserve.
-   - Use MCP-only comment reads only for lightweight top-level PR comment summaries.
-3. Cluster actionable review threads.
-   - Group comments by file or behavior area.
-   - Separate actionable change requests from informational comments, approvals, already-resolved threads, and duplicates.
-4. Confirm scope before editing.
-   - Present numbered actionable threads with a one-line summary of the required change.
-   - If the user did not ask to fix everything, ask which threads to address.
-   - If the user asks to fix everything, interpret that as all unresolved actionable threads and call out anything ambiguous.
-5. Implement the selected fixes locally.
-   - Keep each code change traceable back to the thread or feedback cluster it addresses.
-   - If a comment calls for explanation rather than code, draft the response rather than forcing a code change.
-6. Summarize the result.
-   - List which threads were addressed, which were intentionally left open, and what tests or checks support the change.
+1. Resolve the PR from the user request (owner/repo plus PR number or URL). Ask if any of that is missing.
+2. Fetch PR metadata and the patch with MCP tools.
+3. List review and issue comments with MCP tools.
+   - If the toolset exposes review threads with resolution state (`isResolved`, outdated, file/line anchors), use that.
+   - If comments arrive as a flat list without thread state, work with that list and say that resolved vs unresolved threads cannot be distinguished.
+4. Cluster actionable comments by file or behavior. Separate change requests from informational notes, approvals, and duplicates.
+5. Confirm scope before editing.
+   - Present numbered actionable items with a one-line summary.
+   - If the user did not ask to fix everything, ask which items to address.
+6. Implement only the selected fixes, keeping each change traceable to the comment it addresses. If a comment asks for explanation rather than code, draft a reply instead of forcing a patch.
+7. Summarize which items were addressed, which were left open, and any remaining uncertainty from missing thread metadata.
 
-## Write safety
+## Guardrails
 
-- Do not reply on GitHub, resolve review threads, or submit a review unless the user explicitly asks for that write action.
-- If review comments conflict with each other or would cause a behavioral regression, surface the tradeoff before making changes.
-- If a comment is ambiguous, ask for clarification or draft a proposed response instead of guessing.
-- Do not treat flat PR comments from MCP as a complete representation of review-thread state.
-- If `gh` hits auth or rate-limit issues mid-run, ask the user to re-authenticate and retry.
-
-## Fallback
-
-If neither MCP nor `gh` can resolve the PR cleanly, tell the user whether the blocker is missing repository scope, missing PR context, or CLI authentication, then ask for the missing repo or PR identifier or for a refreshed `gh` login.
+- Do not invent thread resolution state that MCP did not return.
+- Do not fall back to `gh api graphql` or bundled Python scripts.
+- Stop the comment-read path if no comment tools are connected, and say so.

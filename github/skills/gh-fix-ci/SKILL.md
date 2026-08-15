@@ -1,6 +1,6 @@
 ---
 name: gh-fix-ci
-description: Debug or fix failing GitHub PR checks that run in GitHub Actions. Use when the user asks to inspect failing checks, Actions logs, or CI root cause on a pull request. Prefer GitHub MCP Actions tools when they are connected; otherwise use `gh` and the bundled inspect script before implementing any approved fix.
+description: Diagnose failing GitHub Actions checks on a pull request using this plugin's GitHub MCP tools. Use when the user asks to inspect failing checks, workflow runs, or CI logs. Ask for owner/repo and PR number when they are missing. If Actions tools are not connected, say CI logs are unavailable.
 ---
 
 # GitHub Actions CI Fix
@@ -8,61 +8,26 @@ description: Debug or fix failing GitHub PR checks that run in GitHub Actions. U
 ## When to use
 
 - Failing GitHub Actions checks on a pull request
-- The user asks to debug CI, inspect Actions logs, or fix a red check
+- The user asks to debug CI, inspect Actions logs, or plan a fix for a red check
 
 ## Instructions
 
-This workflow is hybrid:
-
-- Use GitHub MCP tools from this plugin for PR metadata, changed files, and review context.
-- Prefer MCP Actions tools (workflow runs, jobs, logs) when the client actually exposes them.
-- Fall back to `gh` and `scripts/inspect_pr_checks.py` when Actions tools are missing, because the default remote MCP toolset may not include Actions.
-- Summarize the root cause first, propose a focused fix plan, and implement only after explicit approval.
-
-Prereq for the `gh` path: authenticate with GitHub CLI once, then confirm with `gh auth status`. Repo and workflow scopes are typically required for Actions inspection.
-
-## Inputs
-
-- `repo`: path inside the repo (default `.`)
-- `pr`: PR number or URL (optional; defaults to current branch PR)
-- GitHub MCP connection, or `gh` authentication for the repo host
+Use GitHub MCP tools from this plugin. Do not run local `gh`, `python scripts/...`, or other CLIs — Yodoca does not execute skill scripts or a GitHub CLI.
 
 ## Workflow
 
-1. Resolve the PR.
-   - If the user provides a PR number or URL, use that directly.
-   - Otherwise prefer the current branch PR with `gh pr view --json number,url`.
-   - When repo and PR are known, fetch PR metadata and patch context through GitHub MCP tools.
-2. Inspect failing checks (GitHub Actions only).
-   - Preferred when MCP Actions tools are available: list check runs / workflow runs for the PR, then fetch job logs for each failure.
-   - Otherwise run the bundled script (handles gh field drift and job-log fallbacks):
-     - `python scripts/inspect_pr_checks.py --repo "." --pr "<number-or-url>"`
-     - Add `--json` for machine-friendly output.
-   - Manual `gh` fallback:
-     - `gh pr checks <pr> --json name,state,bucket,link,startedAt,completedAt,workflow`
-       - If a field is rejected, rerun with the available fields reported by `gh`.
-     - For each failing check, extract the run id from `detailsUrl` and run:
-       - `gh run view <run_id> --json name,workflowName,conclusion,status,url,event,headBranch,headSha`
-       - `gh run view <run_id> --log`
-     - If the run log says it is still in progress, fetch job logs directly:
-       - `gh api "/repos/<owner>/<repo>/actions/jobs/<job_id>/logs" > "<path>"`
-3. Scope non-GitHub Actions checks.
-   - If `detailsUrl` is not a GitHub Actions run, label it as external and only report the URL.
-   - Do not attempt Buildkite or other providers; keep the workflow lean.
-4. Summarize failures for the user.
-   - Provide the failing check name, run URL (if any), and a concise log snippet.
-   - Call out missing logs explicitly and do not over-claim certainty.
-5. Propose a focused fix plan and wait for approval.
-   - Keep the plan tied directly to the failing checks and the observed root cause.
-6. Implement after approval.
-   - Apply the approved fix locally.
-   - Run the most relevant local verification available.
-7. Recheck status and summarize residual risk.
-   - Suggest re-running the relevant tests and `gh pr checks`.
-   - Report what is still unverified, what may still be flaky, and whether any failing checks were external and therefore not actionable here.
+1. Resolve the PR from the user request (owner/repo plus PR number or URL). Ask if any of that is missing.
+2. Fetch PR metadata with MCP tools.
+3. Inspect failing checks.
+   - If the connected toolset exposes Actions or check-run tools, list check runs / workflow runs for the PR, then fetch job logs for failures.
+   - If those tools are not connected, say that CI logs are unavailable on this MCP toolset and stop the inspection path. Do not invent a CLI fallback.
+4. Scope non-GitHub Actions checks. If a check URL is not a GitHub Actions run, label it as external and report the URL only.
+5. Summarize failures: check name, run URL if any, and a concise log snippet. Call out missing logs.
+6. Propose a focused fix plan tied to the observed root cause. Wait for approval before editing code.
+7. After an approved fix, suggest re-running the relevant checks via MCP if that tool exists.
 
 ## Guardrails
 
-- Do not imply that MCP can replace `gh` for Actions log retrieval unless those tools are connected.
-- Treat non-GitHub Actions providers as report-only unless the user explicitly wants a separate investigation path.
-- If the failure is clearly unrelated to the local diff, say so before proposing code changes.
+- Do not imply MCP can read Actions logs unless those tools are actually connected.
+- Treat non-GitHub Actions providers as report-only.
+- If the failure is clearly unrelated to the described change, say so before proposing code edits.

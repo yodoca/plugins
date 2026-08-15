@@ -37,21 +37,7 @@ Omit `homepage` when there is no real URL. Omit `keywords` only if none apply.
 }
 ```
 
-## mcp.json — stdio
-
-```json
-{
-  "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
-  "mcpServers": {
-    "<server-id>": {
-      "type": "stdio",
-      "command": "./bin/<server>",
-      "args": ["--data", "${PLUGIN_DATA}/<server-id>"],
-      "cwd": "${PLUGIN_ROOT}"
-    }
-  }
-}
-```
+Do not add `stdio` MCP. This catalog is imported into Yodoca Gateway, which does not execute stdio servers.
 
 ## skills/<skill-name>/SKILL.md
 
@@ -69,8 +55,12 @@ description: <What it does>. Use when <trigger scenarios and keywords>.
 
 ## Instructions
 
-1. <step>
+1. Identify the repository, issue, or other target from the user request. Ask if it is missing.
+2. Call this plugin's MCP tools. Do not run local git, gh, or skill scripts.
+3. If a needed MCP tool is unavailable, say so and stop that path.
 ```
+
+Do not create `skills/<skill-name>/scripts/`. Put every required step in `SKILL.md`.
 
 ## README.md
 
@@ -79,7 +69,7 @@ Write in Russian. Include: title, one-paragraph purpose with Agent Plugins 1.0.0
 ```markdown
 # <plugin-name>
 
-Переносимый [Agent Plugin](https://agent-plugins.org/) (спецификация 1.0.0). <Назначение.>
+Переносимый [Agent Plugin](https://agent-plugins.org/) (спецификация 1.0.0) для [Yodoca Platform](https://yodoca.ru). <Назначение.>
 
 ## Состав
 

@@ -35,7 +35,6 @@ SECRET_HINT = re.compile(
     re.IGNORECASE,
 )
 PLACEHOLDER_RE = re.compile(r"\$\{[^}]+\}")
-CWD_RE = re.compile(r"^(?:\./|\$\{PLUGIN_ROOT\}(?:/|$)|\$\{PLUGIN_DATA\}(?:/|$))")
 
 
 class Reporter:
@@ -161,6 +160,10 @@ def validate_skills(plugin_dir: Path, reporter: Reporter) -> list[str]:
         if not skill_md.is_file():
             reporter.error(f"skills/{child.name}/: missing SKILL.md")
             continue
+        if (child / "scripts").is_dir():
+            reporter.error(
+                f"skills/{child.name}/scripts is not allowed: Yodoca does not execute skill scripts"
+            )
         text = skill_md.read_text(encoding="utf-8")
         frontmatter = parse_frontmatter(text)
         if frontmatter is None:
@@ -180,47 +183,6 @@ def validate_skills(plugin_dir: Path, reporter: Reporter) -> list[str]:
             )
         found.append(name or child.name)
     return found
-
-
-def validate_stdio(server_id: str, server: dict, reporter: Reporter) -> None:
-    command = server.get("command")
-    if not isinstance(command, str) or not command:
-        reporter.error(f"mcp.json {server_id}: stdio command must be a non-empty string")
-    elif " " in command.strip():
-        reporter.error(f"mcp.json {server_id}: command must be one executable token")
-    elif PLACEHOLDER_RE.search(command):
-        reporter.error(f"mcp.json {server_id}: command must not contain placeholders")
-    elif "/" in command.replace("\\", "/") and not command.startswith("./"):
-        reporter.error(f"mcp.json {server_id}: package command must start with ./")
-    elif command.startswith("../") or "/../" in command:
-        reporter.error(f"mcp.json {server_id}: command escapes the plugin root")
-
-    extra = sorted(set(server) - {"type", "command", "args", "env", "cwd"})
-    if extra:
-        reporter.error(f"mcp.json {server_id}: unknown stdio fields: {', '.join(extra)}")
-
-    if "args" in server:
-        args = server["args"]
-        if not isinstance(args, list) or any(not isinstance(item, str) for item in args):
-            reporter.error(f"mcp.json {server_id}: args must be an array of strings")
-
-    if "env" in server:
-        env = server["env"]
-        if not isinstance(env, dict) or any(not isinstance(v, str) for v in env.values()):
-            reporter.error(f"mcp.json {server_id}: env must be an object of strings")
-        else:
-            for key in ("PLUGIN_ROOT", "PLUGIN_DATA"):
-                if key in env:
-                    reporter.error(f"mcp.json {server_id}: env must not set {key}")
-
-    if "cwd" in server:
-        cwd = server["cwd"]
-        if not isinstance(cwd, str) or not CWD_RE.match(cwd):
-            reporter.error(
-                f"mcp.json {server_id}: cwd must start with ./, ${{PLUGIN_ROOT}}, or ${{PLUGIN_DATA}}"
-            )
-        elif ".." in cwd:
-            reporter.error(f"mcp.json {server_id}: cwd must stay inside the plugin or PLUGIN_DATA")
 
 
 def validate_remote(server_id: str, server: dict, reporter: Reporter) -> None:
@@ -290,13 +252,17 @@ def validate_mcp(plugin_dir: Path, reporter: Reporter) -> list[str]:
             continue
         transport = server.get("type")
         if transport == "stdio":
-            validate_stdio(server_id, server, reporter)
+            reporter.error(
+                f"mcp.json {server_id}: stdio is not allowed; this catalog ships hosted MCP only"
+            )
         elif transport in {"streamable-http", "sse"}:
             if transport == "sse":
                 reporter.warn(f"mcp.json {server_id}: sse is deprecated; prefer streamable-http")
             validate_remote(server_id, server, reporter)
         else:
-            reporter.error(f"mcp.json {server_id}: type must be stdio, streamable-http, or sse")
+            reporter.error(
+                f"mcp.json {server_id}: type must be streamable-http or sse"
+            )
     return found
 
 
