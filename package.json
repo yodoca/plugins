@@ -1,0 +1,19 @@
+{
+  "name": "yodoca-plugins-catalog",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Tooling for the Yodoca Agent Plugins catalog: validates every plugin package against the Agent Plugins 1.0.0 schemas and semantics.",
+  "type": "module",
+  "license": "Apache-2.0",
+  "scripts": {
+    "validate": "node scripts/validate-plugins.mjs",
+    "test": "node scripts/validate-plugins.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "ajv": "^8.17.1",
+    "js-yaml": "^4.1.0"
+  }
+}
