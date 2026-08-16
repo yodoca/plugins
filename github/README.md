@@ -48,6 +48,12 @@ github/
 
 Клиент без OAuth и без PAT не подключит этот сервер. Это ошибка соединения одного MCP, а не всего плагина: скиллы всё равно загружаются.
 
+### Yodoca
+
+В Yodoca GitHub ставится как **deployment** plugin (общий pack: skills + URL MCP). Секреты всегда **per-user**: каждый пользователь подключает свой GitHub через OAuth или PAT. Администратор не задаёт общий PAT на установку. Без личного binding MCP tools в чате не аттачатся (`configuration_required`); skills из pack инжектятся всем.
+
+Расширение `com.yodoca.platform.mcpCredentialScope: user` в `plugin.json` фиксирует это для Yodoca. Это не GitHub App / native connector: audience — GitHub Copilot MCP, не `api.github.com`.
+
 ## Ссылки
 
 - [GitHub MCP Server](https://github.com/github/github-mcp-server)

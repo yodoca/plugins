@@ -10,5 +10,10 @@
   "homepage": "https://github.com/github/github-mcp-server",
   "repository": "https://github.com/yodoca/plugins",
   "license": "Apache-2.0",
-  "keywords": ["github", "git", "repositories", "pull-requests", "issues", "actions", "mcp"]
+  "keywords": ["github", "git", "repositories", "pull-requests", "issues", "actions", "mcp"],
+  "extensions": {
+    "com.yodoca.platform": {
+      "mcpCredentialScope": "user"
+    }
+  }
 }
