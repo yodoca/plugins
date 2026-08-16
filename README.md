@@ -43,6 +43,7 @@ my-plugin/
 | --- | --- | --- |
 | [context7](./context7) | Актуальная документация библиотек через Context7 MCP | MCP (`streamable-http`), skill `context7-mcp` |
 | [github](./github) | Репозитории, issues, PR и Actions через официальный GitHub MCP | MCP (`streamable-http`), skills `github`, `gh-address-comments`, `gh-fix-ci`, `gh-publish` |
+| [vkusvill](./vkusvill) | Поиск товаров, рецептов и магазинов ВкусВилл, сборка ссылки на корзину | MCP (`streamable-http`), skill `vkusvill` |
 
 ## Как добавить плагин
 

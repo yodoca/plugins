@@ -15,3 +15,7 @@ The github plugin packages GitHub's official remote MCP server
 licensed under the MIT License. Agent workflow skills are adapted from
 the OpenAI Codex GitHub plugin (Apache-2.0) and the Cursor GitHub
 marketplace plugin (MIT).
+
+The vkusvill plugin packages VkusVill's official remote MCP server
+(https://mcp.vkusvill.ru/mcp) operated by VkusVill (https://vkusvill.ru).
+Product catalog, prices, recipes, and shop data remain VkusVill's.

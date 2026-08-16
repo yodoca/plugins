@@ -1,0 +1,14 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "vkusvill",
+  "version": "1.0.0",
+  "description": "Search VkusVill groceries, nutrition, recipes, and shops, and build a shareable cart link through the official VkusVill MCP server.",
+  "author": {
+    "name": "Yodoca",
+    "url": "https://yodoca.ru"
+  },
+  "homepage": "https://vkusvill.ru",
+  "repository": "https://github.com/yodoca/plugins",
+  "license": "Apache-2.0",
+  "keywords": ["vkusvill", "grocery", "recipes", "nutrition", "mcp", "e-commerce"]
+}
